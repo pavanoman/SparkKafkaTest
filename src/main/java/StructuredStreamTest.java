@@ -53,15 +53,19 @@ public class StructuredStreamTest {
 
          StructType structType = new StructType(structFields);*/
 
+        Dataset<Row> wordCounts=df.select("id","name","time").groupBy("id").max("time");
 
 
-        StreamingQuery query=  df.writeStream()
+
+        StreamingQuery query=  wordCounts.writeStream()
+
                 .format("console")
-
+                .outputMode("complete")
                 .option("truncate","false")
                 .start();
 
         query.awaitTermination();
+
 
 
     }

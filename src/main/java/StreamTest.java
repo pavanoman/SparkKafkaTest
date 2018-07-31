@@ -17,11 +17,13 @@ import java.util.Map;
 public class StreamTest {
 
 
+
+
     public static void main(String[] args) throws InterruptedException {
 
         SparkConf conf = new SparkConf().setAppName("SparkstreamExample")
                 .setMaster("local[4]");
-        //set("spark.driver.host","localhost")
+
         JavaStreamingContext jssc = new JavaStreamingContext(conf, Durations.seconds(2));
 
         Map<String, Object> kafkaParams = new HashMap<>();

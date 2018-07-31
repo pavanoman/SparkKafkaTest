@@ -11,10 +11,18 @@ import java.util.Random;
 public class JsonWriter {
 
 
+    public static int count=1;
     public static String getJSONString() throws IOException {
 
         Random rand = new Random();
-        int id=rand.nextInt();
+        //int id=rand.nextInt();
+        int id=count;
+
+        if(count%5==0 ) {
+
+            id=rand.nextInt(count);
+        }
+        count++;
 
         int length = 10;
         boolean useLetters = true;
@@ -49,20 +57,21 @@ public class JsonWriter {
 
         Producer <String, String> producer = new KafkaProducer <String,String>(props);
 
-        int count=0;
+        int count2=0;
         try {
             while (true) {
                 producer.send(new ProducerRecord<String, String>("test1", "key", getJSONString()));
 
-                Thread.sleep(1 * 1000);
-                count++;
-                if(count==50) break;
+                Thread.sleep(1 * 2000);
+                count2++;
+                if(count2==50) break;
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
         producer.close();
+
 
     }
 

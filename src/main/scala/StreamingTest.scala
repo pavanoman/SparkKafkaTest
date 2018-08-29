@@ -1,46 +1,43 @@
-import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.streaming.{Durations, Seconds, StreamingContext}
-import org.apache.spark.streaming.kafka010._
-import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
-import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
+
+object StreamingTest extends App {
+
+  import java.util.Properties
+
+  import org.apache.kafka.clients.producer._
+
+  import scala.io.Source
+
+  import org.apache.spark.sql.functions._
+  import org.apache.spark.sql.SparkSession
+
+  Logger.getLogger("org").setLevel(Level.WARN)
+  Logger.getLogger("akka").setLevel(Level.WARN)
+
+  val spark = SparkSession
+    .builder
+    .master("local[4]")
+    .appName("StructuredCount")
+    .getOrCreate()
+
+  import spark.implicits._
 
 
-object StreamingTest{
+  val lines = spark.readStream
+    .format("socket")
+    .option("host", "localhost")
+    .option("port", 9999)
+    .load()
 
-  def main(args: Array[String]): Unit = {
+  val words = lines.as[String].flatMap(_.split(" "))
 
-    Logger.getLogger("org").setLevel(Level.DEBUG)
-    Logger.getLogger("akka").setLevel(Level.DEBUG)
+  val wordCounts = words.groupBy("value").count()
 
-    val conf = new SparkConf().setMaster("local[2]").setAppName("NetworkWordCount")
-    val ssc = new StreamingContext(conf, Seconds(1))
-    val kafkaParams = Map[String, Object](
-      "bootstrap.servers" -> "quickstart.cloudera:9094",
-      "key.deserializer" -> classOf[StringDeserializer],
-      "value.deserializer" -> classOf[StringDeserializer],
-      "group.id" -> "group1",
-      "auto.offset.reset" -> "earliest",
-      "enable.auto.commit" -> (true: java.lang.Boolean)
-    )
+  val query = wordCounts.writeStream
+    .outputMode("complete")
+    .format("console")
+    .start()
 
-    val topics = Array("test1")
-    val stream = KafkaUtils.createDirectStream[String, String](
-      ssc,
-      PreferConsistent,
-      Subscribe[String, String](topics, kafkaParams)
-    )
-
-    stream.map(record => (record.key, record.value))
-    stream.foreachRDD(rdd =>{
-      print(rdd.count())
-    })
-
-    ssc.start()
-    ssc.awaitTermination()
-  }
+  query.awaitTermination()
 
 }

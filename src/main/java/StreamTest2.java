@@ -81,7 +81,29 @@ public class StreamTest2 {
            //df.printSchema();
            df.show(false);
            System.out.println("****the count is:" + df.count());
-           System.out.println("****the distinct count is:" + df.select("id").distinct().count());
+           //System.out.println("****the distinct count is:" + df.select("id").distinct().count());
+           System.out.println("*** distinct :");
+           //df.select("id").distinct().show();
+
+           df.createOrReplaceTempView("tempt");
+
+           /*Dataset<Row> df2  = spark.sql("select id from tempt fin " +
+                   "Inner join  " +
+                   "(select id, MAX(time) as maxtime " +
+                   "from temp" +
+                   "group by id) groupedtemp" +
+                   "on fin.id'='groupedtemp.id" +
+                   "AND fin.time'='groupedtemp.maxtime" );*/
+
+           Dataset<Row> df2= spark.sql("select * from tempt");
+           Dataset<Row> df3=spark.sql("select id, MAX(time) as maxtime from tempt group by id");
+
+           df2.createOrReplaceTempView("records1");
+           df3.createOrReplaceTempView("records2");
+
+           Dataset<Row> df4=spark.sql("SELECT r1.id,r1.name, r2.maxtime FROM records1 r1 JOIN records2 r2 ON r1.id = r2.id and r1.time=r2.maxtime");
+           df4.show();
+
 
         });
 

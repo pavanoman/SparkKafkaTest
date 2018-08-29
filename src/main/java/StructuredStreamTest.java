@@ -6,6 +6,7 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
+import org.apache.spark.sql.streaming.Trigger;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -28,7 +29,7 @@ public class StructuredStreamTest {
 
                 DataTypes.createStructField("id", DataTypes.IntegerType, true),
                 DataTypes.createStructField("name", DataTypes.StringType, true),
-                DataTypes.createStructField("time", DataTypes.LongType, true)
+                DataTypes.createStructField("time", DataTypes.TimestampType, true)
 
         });
 
@@ -53,20 +54,34 @@ public class StructuredStreamTest {
 
          StructType structType = new StructType(structFields);*/
 
-        Dataset<Row> wordCounts=df.select("id","name","time").groupBy("id").max("time");
+        //Dataset<Row> wordCounts=df.groupBy("id").max("time");
 
+        /*Dataset<Row> windowedCounts = df.groupBy(
+                functions.window(df.col("time"), "5 seconds", "5 seconds"),
+                df.col("time")
+        ).max("time");*/
+        //.withWatermark("time", "5 seconds")
+       /* Dataset<Row> windowedCounts = df
+                 .groupBy(df.col("id"),
+                functions.window(df.col("time"), "15 seconds")
+        ).count();*/
+        //Dataset<Row> windowedCounts2= windowedCounts.sort(windowedCounts.col("window"));
+      // Dataset<Row> windowedCounts = df.withWatermark("time", "5 seconds").groupBy("time","id").count();
 
+        Dataset<Row> windowedCounts = df.groupBy("time","id","name").count();
 
-        StreamingQuery query=  wordCounts.writeStream()
-
+        StreamingQuery query=  windowedCounts
+                .writeStream()
                 .format("console")
-                .outputMode("complete")
+                .outputMode("update")
                 .option("truncate","false")
+                .trigger(Trigger.ProcessingTime("15 seconds"))
                 .start();
 
         query.awaitTermination();
 
 
-
     }
+
+
 }

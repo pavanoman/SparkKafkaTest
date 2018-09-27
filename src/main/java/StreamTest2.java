@@ -5,6 +5,7 @@ import org.apache.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.Metadata;
@@ -24,6 +25,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+
+
+
 public class StreamTest2 {
 
     private static final Duration WINDOW_LENGTH = Durations.seconds(45);
@@ -38,11 +42,15 @@ public class StreamTest2 {
         SparkSession spark = SparkSession
                 .builder()
                 .appName("Java Spark example")
-                .master("local[4]")
+                .config("spark.sql.warehouse.dir","http://quickstart.cloudera:50070/explorer.html#/user/hive/warehouse/" )
+                .enableHiveSupport()
+
                 .getOrCreate();
 
         JavaSparkContext ctx = new JavaSparkContext(spark.sparkContext());
         JavaStreamingContext jssc = new JavaStreamingContext(ctx, SLIDE_INTERVAL);
+
+        //HiveContext hiveContext = new HiveContext(spark.sparkContext());
 
         Map<String, Object> kafkaParams = new HashMap<>();
         kafkaParams.put("bootstrap.servers", "quickstart.cloudera:9092");
@@ -82,7 +90,7 @@ public class StreamTest2 {
            df.show(false);
            System.out.println("****the count is:" + df.count());
            //System.out.println("****the distinct count is:" + df.select("id").distinct().count());
-           System.out.println("*** distinct :");
+           //System.out.println("*** distinct :");
            //df.select("id").distinct().show();
 
            df.createOrReplaceTempView("tempt");
@@ -105,7 +113,15 @@ public class StreamTest2 {
            df4.show();
 
 
-        });
+           df4.createOrReplaceTempView("records3");
+           spark.sql("create table if not exists streamtest2.testtable as select * from records3");
+           //df4.write().mode(SaveMode.Overwrite).csv("/user/cloudera/StreamTest2CSV/test.csv");
+           df4.write().mode(SaveMode.Overwrite).insertInto("streamtest2.testtable");
+
+
+       });
+
+        spark.sql("show databases").show();
 
         jssc.start();
         jssc.awaitTermination();

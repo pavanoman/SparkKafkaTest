@@ -65,9 +65,9 @@ public class JsonWriter {
             while (true) {
                 producer.send(new ProducerRecord<String, String>("test1", "key", getJSONString()));
 
-                Thread.sleep(1 * 5000 );
+                Thread.sleep(1 * 1000 );
                 count2++;
-                if(count2==120) break;
+                if(count2==20) break;
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

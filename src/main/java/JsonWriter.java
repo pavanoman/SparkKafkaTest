@@ -31,6 +31,9 @@ public class JsonWriter {
 
         long time=System.currentTimeMillis();
 
+
+        //Timestamp time = new Timestamp(System.currentTimeMillis());
+
         User user = new User (id,name,time);
         ObjectMapper objectMapper= new ObjectMapper();
         String objString=objectMapper.writeValueAsString(user);
@@ -62,9 +65,9 @@ public class JsonWriter {
             while (true) {
                 producer.send(new ProducerRecord<String, String>("test1", "key", getJSONString()));
 
-                Thread.sleep(1 * 2000);
+                Thread.sleep(1 * 1000 );
                 count2++;
-                if(count2==50) break;
+                if(count2==20) break;
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

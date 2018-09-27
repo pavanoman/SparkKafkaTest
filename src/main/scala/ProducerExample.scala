@@ -7,14 +7,14 @@ object ProducerExample extends App {
  import scala.io.Source
 
  val  props = new Properties()
- props.put("bootstrap.servers", "quickstart.cloudera:9094")
+ props.put("bootstrap.servers", "quickstart.cloudera:9092")
   
  props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
  props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
 
  val producer = new KafkaProducer[String,String](props)
    
- val TOPIC="test4"
+ val TOPIC="test1"
 
 
 

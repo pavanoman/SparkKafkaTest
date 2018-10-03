@@ -25,7 +25,19 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+/*class HiveSingleton{
 
+    private static HiveContext hive_instance=null;
+
+    public static HiveContext getInstance(SparkContext sc){
+        if(hive_instance==null){
+            hive_instance=new HiveContext(sc);
+        }
+
+        return hive_instance;
+    }
+
+}*/
 
 
 public class StreamTest2 {
@@ -36,16 +48,32 @@ public class StreamTest2 {
 
     public static void main(String[] args) throws InterruptedException {
 
-        Logger.getLogger("org").setLevel(Level.WARN);
-        Logger.getLogger("akka").setLevel(Level.WARN);
+       Logger.getLogger("org").setLevel(Level.WARN);
+       Logger.getLogger("akka").setLevel(Level.WARN);
+        //String warehouseLocation = new File("spark-warehouse").getAbsolutePath();
 
         SparkSession spark = SparkSession
                 .builder()
+//                .master("yarn-client")
                 .appName("Java Spark example")
-                .config("spark.sql.warehouse.dir","http://quickstart.cloudera:50070/explorer.html#/user/hive/warehouse/" )
+                //.config("spark.sql.warehouse.dir", "hdfs:///user/hive/warehouse" )
                 .enableHiveSupport()
 
                 .getOrCreate();
+
+        spark.sparkContext().getConf().set("spark.streaming.stopGracefullyOnShutdown","true");
+
+        //SparkContext sc = spark.sparkContext();
+
+      /*  System.out.println("******Spark Conf Properties ******");
+        for (Tuple2<String, String> stringStringTuple2 : sc.getConf().getAll()) {
+            System.out.println(stringStringTuple2._1+"="+stringStringTuple2._2);
+        }
+*/
+
+//  /home/clairvoyant/pavan/spark-warehouse/
+        spark.sql("show schemas").show();
+        spark.sql("show tables").show();
 
         JavaSparkContext ctx = new JavaSparkContext(spark.sparkContext());
         JavaStreamingContext jssc = new JavaStreamingContext(ctx, SLIDE_INTERVAL);
@@ -53,14 +81,15 @@ public class StreamTest2 {
         //HiveContext hiveContext = new HiveContext(spark.sparkContext());
 
         Map<String, Object> kafkaParams = new HashMap<>();
-        kafkaParams.put("bootstrap.servers", "quickstart.cloudera:9092");
+        kafkaParams.put("bootstrap.servers", "hadoop33.clairvoyant.local:9092");
+        //kafkaParams.put("bootstrap.servers", "quickstart.cloudera:9092");
         kafkaParams.put("key.deserializer", StringDeserializer.class);
         kafkaParams.put("value.deserializer", StringDeserializer.class);
         kafkaParams.put("group.id", "group2");
         kafkaParams.put("auto.offset.reset", "earliest");
         kafkaParams.put("enable.auto.commit", false);
 
-        Collection<String> topics = Arrays.asList("test1");
+        Collection<String> topics = Arrays.asList("test9");
 
         JavaInputDStream<ConsumerRecord<String, String>> stream =
                 KafkaUtils.createDirectStream(
@@ -86,22 +115,9 @@ public class StreamTest2 {
 
        windowDStream.foreachRDD((rdd) -> {
            Dataset<Row> df = spark.read().schema(structType).json(rdd);
-           //df.printSchema();
            df.show(false);
            System.out.println("****the count is:" + df.count());
-           //System.out.println("****the distinct count is:" + df.select("id").distinct().count());
-           //System.out.println("*** distinct :");
-           //df.select("id").distinct().show();
-
            df.createOrReplaceTempView("tempt");
-
-           /*Dataset<Row> df2  = spark.sql("select id from tempt fin " +
-                   "Inner join  " +
-                   "(select id, MAX(time) as maxtime " +
-                   "from temp" +
-                   "group by id) groupedtemp" +
-                   "on fin.id'='groupedtemp.id" +
-                   "AND fin.time'='groupedtemp.maxtime" );*/
 
            Dataset<Row> df2= spark.sql("select * from tempt");
            Dataset<Row> df3=spark.sql("select id, MAX(time) as maxtime from tempt group by id");
@@ -113,15 +129,13 @@ public class StreamTest2 {
            df4.show();
 
 
-           df4.createOrReplaceTempView("records3");
-           spark.sql("create table if not exists streamtest2.testtable as select * from records3");
-           //df4.write().mode(SaveMode.Overwrite).csv("/user/cloudera/StreamTest2CSV/test.csv");
-           df4.write().mode(SaveMode.Overwrite).insertInto("streamtest2.testtable");
-
+           //df4.createOrReplaceTempView("records3");
+           //spark.sql("create table if not exists default.testtable");
+           //as select * from records3
+           df4.write().mode(SaveMode.Overwrite).insertInto("default.testtable");
+           System.out.println("*****Data Written in Hive Table*****");
 
        });
-
-        spark.sql("show databases").show();
 
         jssc.start();
         jssc.awaitTermination();

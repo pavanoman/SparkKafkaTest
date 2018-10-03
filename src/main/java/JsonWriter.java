@@ -49,7 +49,8 @@ public class JsonWriter {
         //retention period of 15 mins
 
         Properties props = new Properties();
-        props.put("bootstrap.servers", "quickstart.cloudera:9092");
+       // props.put("bootstrap.servers", "quickstart.clouder:9092");
+        props.put("bootstrap.servers", "hadoop33.clairvoyant.local:9092");
         props.put("acks", "all");
         props.put("retries", 0);
         props.put("batch.size", 16384);
@@ -63,7 +64,7 @@ public class JsonWriter {
         int count2=0;
         try {
             while (true) {
-                producer.send(new ProducerRecord<String, String>("test1", "key", getJSONString()));
+                producer.send(new ProducerRecord<String, String>("test9", "key", getJSONString()));
 
                 Thread.sleep(1 * 1000 );
                 count2++;
